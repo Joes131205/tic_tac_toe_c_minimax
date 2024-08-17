@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -108,6 +109,20 @@ char checkWinning(char board[3][3])
     // No winner
     return EMPTY;
 }
+bool isTied(char board[3][3])
+{
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            if (board[i][j] == EMPTY)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 int main()
 {
     char board[3][3] = {{EMPTY, EMPTY, EMPTY},
@@ -127,15 +142,32 @@ int main()
     while (true)
     {
         drawBoard(board);
-
-        printf("%c move (row, col) : ", current);
-        scanf("%d %d", &row, &col);
-
-        if (row < 1 || row > 3 || col < 1 || col > 3 || board[row - 1][col - 1] != EMPTY)
+        if (current == player[0])
         {
-            continue;
+            // Player move
+            printf("%c move (row, col) : ", current);
+            scanf("%d %d", &row, &col);
+
+            if (row < 1 || row > 3 || col < 1 || col > 3 || board[row - 1][col - 1] != EMPTY)
+            {
+                continue;
+            }
+            board[row - 1][col - 1] = current;
         }
-        board[row - 1][col - 1] = current;
+        else
+        {
+            bool moveMade = false;
+            while (!moveMade)
+            {
+                row = rand() % 3;
+                col = rand() % 3;
+                if (board[row][col] == EMPTY)
+                {
+                    board[row][col] = current;
+                    moveMade = true;
+                }
+            }
+        }
 
         if (checkWinning(board) != EMPTY)
         {
@@ -143,7 +175,15 @@ int main()
             printf("Player %c wins!\n", current);
             break;
         }
+        else if (isTied(board))
+        {
+            drawBoard(board);
+            printf("The game is a draw!\n");
+            break;
+        }
 
         current = determineTurn(board);
     }
+
+    return 0;
 }

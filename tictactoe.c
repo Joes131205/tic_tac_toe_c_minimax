@@ -7,14 +7,80 @@
 #define O 'O'
 #define EMPTY ' '
 
+void drawBoard(char board[3][3]);
+char determineTurn(char board[3][3]);
+char determineWinner(char set[]);
+char checkWinning(char board[3][3]);
+bool isTied(char board[3][3]);
+void getBestMove(char board[3][3], int *row, int *col);
+int utility(char board[3][3]);
+int minimax(char board[3][3], bool isMaximizing);
+
+int main()
+{
+    char board[3][3] = {{EMPTY, EMPTY, EMPTY},
+                        {EMPTY, EMPTY, EMPTY},
+                        {EMPTY, EMPTY, EMPTY}};
+
+    char player[10];
+    do
+    {
+        printf("Choose your player (X or O): ");
+        scanf("%s", player);
+    } while ((player[0] != X && player[0] != O) || strlen(player) != 1);
+
+    char current = determineTurn(board);
+    int row, col;
+
+    while (true)
+    {
+        drawBoard(board);
+        if (current == player[0])
+        {
+            // Player move
+            printf("%c move (row, col) : ", current);
+            scanf("%d %d", &row, &col);
+
+            if (row < 1 || row > 3 || col < 1 || col > 3 || board[row - 1][col - 1] != EMPTY)
+            {
+                printf("Invalid move. Try again.\n");
+                continue;
+            }
+            board[row - 1][col - 1] = current;
+        }
+        else
+        {
+            // AI MOVE
+            getBestMove(board, &row, &col);
+            board[row][col] = current;
+        }
+
+        if (checkWinning(board) != EMPTY)
+        {
+            drawBoard(board);
+            printf("Player %c wins!\n", current);
+            break;
+        }
+        else if (isTied(board))
+        {
+            drawBoard(board);
+            printf("Draw!\n");
+            break;
+        }
+
+        current = determineTurn(board);
+    }
+
+    return 0;
+}
+
+// Tic Tac Toe Mechanic
 void drawBoard(char board[3][3])
 {
     for (int i = 0; i < 3; i++)
     {
-
         for (int j = 0; j < 3; j++)
         {
-
             printf(" %c ", board[i][j]);
             if (j < 2)
             {
@@ -47,7 +113,7 @@ char determineTurn(char board[3][3])
             }
         }
     }
-    if ((x_count == 0 && o_count == 0) || o_count > x_count || o_count == x_count)
+    if (x_count <= o_count)
     {
         return X;
     }
@@ -109,6 +175,7 @@ char checkWinning(char board[3][3])
     // No winner
     return EMPTY;
 }
+
 bool isTied(char board[3][3])
 {
     for (int i = 0; i < 3; i++)
@@ -123,67 +190,95 @@ bool isTied(char board[3][3])
     }
     return true;
 }
-int main()
+
+// AI Mechanic
+
+void getBestMove(char board[3][3], int *row, int *col)
 {
-    char board[3][3] = {{EMPTY, EMPTY, EMPTY},
-                        {EMPTY, EMPTY, EMPTY},
-                        {EMPTY, EMPTY, EMPTY}};
-
-    char player[10];
-    do
+    int bestScore = -1000;
+    *row = -1;
+    *col = -1;
+    for (int i = 0; i < 3; i++)
     {
-        printf("Choose your player (X or O): ");
-        scanf("%s", player);
-    } while ((player[0] != X && player[0] != O) || strlen(player) != 1);
-
-    char current = determineTurn(board);
-    int row, col;
-
-    while (true)
-    {
-        drawBoard(board);
-        if (current == player[0])
+        for (int j = 0; j < 3; j++)
         {
-            // Player move
-            printf("%c move (row, col) : ", current);
-            scanf("%d %d", &row, &col);
-
-            if (row < 1 || row > 3 || col < 1 || col > 3 || board[row - 1][col - 1] != EMPTY)
+            if (board[i][j] == EMPTY)
             {
-                continue;
-            }
-            board[row - 1][col - 1] = current;
-        }
-        else
-        {
-            bool moveMade = false;
-            while (!moveMade)
-            {
-                row = rand() % 3;
-                col = rand() % 3;
-                if (board[row][col] == EMPTY)
+                board[i][j] = determineTurn(board); // Assume AI is playing as X
+                int score = minimax(board, false);
+                board[i][j] = EMPTY;
+                if (score > bestScore)
                 {
-                    board[row][col] = current;
-                    moveMade = true;
+                    bestScore = score;
+                    *row = i;
+                    *col = j;
                 }
             }
         }
-
-        if (checkWinning(board) != EMPTY)
-        {
-            drawBoard(board);
-            printf("Player %c wins!\n", current);
-            break;
-        }
-        else if (isTied(board))
-        {
-            drawBoard(board);
-            printf("The game is a draw!\n");
-            break;
-        }
-
-        current = determineTurn(board);
     }
+}
 
-    return 0;
+int utility(char board[3][3])
+{
+    char winner = checkWinning(board);
+    if (winner == X)
+    {
+        return 1;
+    }
+    else if (winner == O)
+    {
+        return -1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+int minimax(char board[3][3], bool isMaximizing)
+{
+    char winner = checkWinning(board);
+    if (winner == X)
+        return 1;
+    if (winner == O)
+        return -1;
+    if (isTied(board))
+        return 0;
+
+    if (isMaximizing)
+    {
+        int bestScore = -1000;
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                if (board[i][j] == EMPTY)
+                {
+                    board[i][j] = X;
+                    int score = minimax(board, false);
+                    board[i][j] = EMPTY;
+                    bestScore = (score > bestScore) ? score : bestScore;
+                }
+            }
+        }
+        return bestScore;
+    }
+    else
+    {
+        int bestScore = 1000;
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                if (board[i][j] == EMPTY)
+                {
+                    board[i][j] = O;
+                    int score = minimax(board, true);
+                    board[i][j] = EMPTY;
+                    bestScore = (score < bestScore) ? score : bestScore;
+                }
+            }
+        }
+        return bestScore;
+    }
 }
